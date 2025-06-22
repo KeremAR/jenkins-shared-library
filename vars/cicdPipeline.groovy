@@ -34,7 +34,8 @@ def call() {
                 agent {
                     docker {
                         image 'docker:20.10.12'
-                        args '-v /var/run/docker.sock:/var/run/docker.sock'
+                        // Run the container as root to have permission for the Docker socket
+                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock'
                     }
                 }
                 stages {
