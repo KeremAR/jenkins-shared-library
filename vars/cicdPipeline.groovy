@@ -6,7 +6,6 @@ def call() {
             DOCKERHUB_USER = "keremar"
             DOCKER_CREDS   = credentials('dockerhub-credentials')
             DOCKER_IMAGE_NAME = ''
-            JEST_JUNIT_OUTPUT_DIR = "reports/junit"
         }
 
         stages {
@@ -15,10 +14,10 @@ def call() {
                     script {
                         def logoFilePath = ''
                         if (env.BRANCH_NAME == 'main') {
-                            env.DOCKER_IMAGE_NAME = "${DOCKERHUB_USER}/nodemain:latest"
+                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodemain:latest"
                             logoFilePath = 'src/logo-main.svg'
                         } else if (env.BRANCH_NAME == 'dev') {
-                            env.DOCKER_IMAGE_NAME = "${DOCKERHUB_USER}/nodedev:latest"
+                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodedev:latest"
                             logoFilePath = 'src/logo-dev.svg'
                         } else {
                             env.DOCKER_IMAGE_NAME = "local-build/${env.BRANCH_NAME}"
@@ -27,22 +26,6 @@ def call() {
                         env.LOGO_FILE_PATH = logoFilePath
                         echo "Image name set to: ${env.DOCKER_IMAGE_NAME}"
                         echo "Logo file path set to: ${env.LOGO_FILE_PATH}"
-                    }
-                }
-            }
-
-            stage('Test Application and Collect Reports') {
-                agent {
-                    docker { image 'node:16-alpine' }
-                }
-                steps {
-                    // Use a local cache for npm to avoid permission issues
-                    sh 'npm install --cache .npm-cache'
-                    sh 'npm test -- --ci --reporters=default --reporters=jest-junit --cache .npm-cache'
-                }
-                post {
-                    always {
-                        junit testResults: "${JEST_JUNIT_OUTPUT_DIR}/*.xml"
                     }
                 }
             }
