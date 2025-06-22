@@ -6,7 +6,6 @@ def call() {
             DOCKERHUB_USER = "keremar"
             DOCKER_CREDS   = credentials('dockerhub-credentials')
             DOCKER_IMAGE_NAME = ''
-            // Defines where the JUnit reports will be stored
             JEST_JUNIT_OUTPUT_DIR = "reports/junit"
         }
 
@@ -16,10 +15,10 @@ def call() {
                     script {
                         def logoFilePath = ''
                         if (env.BRANCH_NAME == 'main') {
-                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodemain:latest"
+                            env.DOCKER_IMAGE_NAME = "${DOCKERHUB_USER}/nodemain:latest"
                             logoFilePath = 'src/logo-main.svg'
                         } else if (env.BRANCH_NAME == 'dev') {
-                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodedev:latest"
+                            env.DOCKER_IMAGE_NAME = "${DOCKERHUB_USER}/nodedev:latest"
                             logoFilePath = 'src/logo-dev.svg'
                         } else {
                             env.DOCKER_IMAGE_NAME = "local-build/${env.BRANCH_NAME}"
@@ -37,14 +36,12 @@ def call() {
                     docker { image 'node:16-alpine' }
                 }
                 steps {
-                    sh 'npm config set cache .npm-cache --global'
-                    sh 'npm install'
-                    // Run tests and generate JUnit report
-                    sh 'npm test -- --ci --reporters=default --reporters=jest-junit'
+                    // Use a local cache for npm to avoid permission issues
+                    sh 'npm install --cache .npm-cache'
+                    sh 'npm test -- --ci --reporters=default --reporters=jest-junit --cache .npm-cache'
                 }
                 post {
                     always {
-                        // Publish test results
                         junit testResults: "${JEST_JUNIT_OUTPUT_DIR}/*.xml"
                     }
                 }
@@ -60,17 +57,14 @@ def call() {
                 stages {
                     stage('Lint Dockerfile') {
                         steps {
-                            // We need to have Docker available to run hadolint container
                             sh 'docker run --rm -i hadolint/hadolint < Dockerfile'
                         }
                     }
-
                     stage('Build Docker Image') {
                         steps {
                             sh "docker build --build-arg LOGO_FILE=${env.LOGO_FILE_PATH} -t ${env.DOCKER_IMAGE_NAME} ."
                         }
                     }
-
                     stage('Scan and Push if Not a PR') {
                         when {
                             anyOf {
@@ -80,10 +74,7 @@ def call() {
                         }
                         steps {
                             script {
-                                // Scan image
-                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL ${env.DOCKER_IMAGE_NAME}"
-                                
-                                // Push image
+                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${pwd()}:/app -w /app aquasec/trivy:latest image --cache-dir .trivy-cache --exit-code 0 --severity HIGH,CRITICAL ${env.DOCKER_IMAGE_NAME}"
                                 sh 'echo $DOCKER_CREDS_PSW | docker login -u $DOCKER_CREDS_USR --password-stdin'
                                 sh "docker push ${env.DOCKER_IMAGE_NAME}"
                             }
@@ -108,7 +99,6 @@ def call() {
             always {
                 echo "Cleaning up..."
                 script {
-                    // Only try to logout if logged in
                     if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'dev') {
                         echo "Logging out from Docker Hub..."
                         sh 'docker logout'
@@ -118,4 +108,4 @@ def call() {
             }
         }
     }
-} 
+}
