@@ -16,10 +16,10 @@ def call() {
                     script {
                         def logoFilePath = ''
                         if (env.BRANCH_NAME == 'main') {
-                            env.DOCKER_IMAGE_NAME = "${DOCKERHUB_USER}/nodemain:latest"
+                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodemain:latest"
                             logoFilePath = 'src/logo-main.svg'
                         } else if (env.BRANCH_NAME == 'dev') {
-                            env.DOCKER_IMAGE_NAME = "${DOCKERHUB_USER}/nodedev:latest"
+                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodedev:latest"
                             logoFilePath = 'src/logo-dev.svg'
                         } else {
                             env.DOCKER_IMAGE_NAME = "local-build/${env.BRANCH_NAME}"
@@ -37,6 +37,7 @@ def call() {
                     docker { image 'node:16-alpine' }
                 }
                 steps {
+                    sh 'npm config set cache .npm-cache --global'
                     sh 'npm install'
                     // Run tests and generate JUnit report
                     sh 'npm test -- --ci --reporters=default --reporters=jest-junit'
