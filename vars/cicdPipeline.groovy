@@ -41,6 +41,13 @@ def call() {
                             sh 'docker run --rm -i hadolint/hadolint < Dockerfile'
                         }
                     }
+
+                    stage('Test') {
+                        steps {
+                            sh 'npm install --cache .npm-cache'
+                            sh 'npm test -- --watchAll=false'
+                        }
+                    }
                     stage('Build Docker Image') {
                         steps {
                             sh "docker build --build-arg LOGO_FILE=${env.LOGO_FILE_PATH} -t ${env.DOCKER_IMAGE_NAME} ."
