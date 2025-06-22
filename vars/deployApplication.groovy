@@ -1,8 +1,8 @@
 #!/usr/bin/env groovy
 
-def call(Map config = [:]) {
-    def targetEnv = config.get('targetEnv', '').toLowerCase()
-    def imageToDeploy = config.get('imageToDeploy', '')
+def call(Map args) {
+    def targetEnv = args.get('targetEnv', '').toLowerCase()
+    def imageToDeploy = args.get('imageToDeploy', '')
     def appPort = ''
 
     if (targetEnv == 'main') {
