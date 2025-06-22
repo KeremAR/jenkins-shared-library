@@ -5,7 +5,6 @@ def call() {
         environment {
             DOCKERHUB_USER = "keremar"
             DOCKER_CREDS   = credentials('dockerhub-credentials')
-            DOCKER_IMAGE_NAME = ''
         }
 
         stages {
@@ -13,16 +12,15 @@ def call() {
                 steps {
                     script {
                         def logoFilePath = ''
+                        def dockerImageName = ''
                         if (env.BRANCH_NAME == 'main') {
-                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodemain:latest"
+                            dockerImageName = "${env.DOCKERHUB_USER}/nodemain:latest"
                             logoFilePath = 'src/logo-main.svg'
                         } else if (env.BRANCH_NAME == 'dev') {
-                            env.DOCKER_IMAGE_NAME = "${env.DOCKERHUB_USER}/nodedev:latest"
+                            dockerImageName = "${env.DOCKERHUB_USER}/nodedev:latest"
                             logoFilePath = 'src/logo-dev.svg'
-                        } else {
-                            env.DOCKER_IMAGE_NAME = "local-build/${env.BRANCH_NAME}"
-                            logoFilePath = 'src/logo.svg' // Default logo for other branches
                         }
+                        env.DOCKER_IMAGE_NAME = dockerImageName
                         env.LOGO_FILE_PATH = logoFilePath
                         echo "Image name set to: ${env.DOCKER_IMAGE_NAME}"
                         echo "Logo file path set to: ${env.LOGO_FILE_PATH}"
@@ -34,7 +32,6 @@ def call() {
                 agent {
                     docker {
                         image 'docker:20.10.12'
-                        // Run the container as root to have permission for the Docker socket
                         args '-u root -v /var/run/docker.sock:/var/run/docker.sock'
                     }
                 }
