@@ -28,6 +28,19 @@ def call() {
                 }
             }
             
+            stage('Test') {
+                agent {
+                    docker {
+                        image 'node:16-alpine'
+                        args '-u root'
+                    }
+                }
+                steps {
+                    sh 'npm install --cache .npm-cache'
+                    sh 'npm test -- --watchAll=false'
+                }
+            }
+            
             stage('Build and Push') {
                 agent {
                     docker {
@@ -39,13 +52,6 @@ def call() {
                     stage('Lint Dockerfile') {
                         steps {
                             sh 'docker run --rm -i hadolint/hadolint < Dockerfile'
-                        }
-                    }
-
-                    stage('Test') {
-                        steps {
-                            sh 'npm install --cache .npm-cache'
-                            sh 'npm test -- --watchAll=false'
                         }
                     }
                     stage('Build Docker Image') {
