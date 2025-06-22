@@ -21,6 +21,13 @@ def call(Map args) {
 
     echo "Deploying image '${imageToDeploy}' to '${targetEnv}' environment on port ${appPort}."
 
+
+    sh """
+        echo "--- Checking for processes on port ${appPort} ---"
+        netstat -tulnp | grep ':${appPort}' || echo "Port ${appPort} appears to be free."
+        echo "-------------------------------------------"
+    """
+
     sh """
         if [ \$(docker ps -a -q -f name=${containerName}) ]; then
             echo "Stopping and removing existing container: ${containerName}"
